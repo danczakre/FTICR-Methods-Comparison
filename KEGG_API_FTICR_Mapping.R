@@ -4,14 +4,18 @@ library(readxl)
 library(rvest)
 library(dplyr)
 
-# Set working directory
-setwd("~/Documents/MSC-2 Chitin Degradation/Transcript Mapping/")
+output_prefix = "Output"
 
-# Load in annotations
-annotations = read.csv("../annotations_alt.csv")
+# Set working directory
+setwd("~/Documents/East River/New Comparative Analyses/NonSPE_Neg/")
+
+# Load in molecular file from ftmsRanalysis
+mol = read.csv("Processed_NonSPE_Neg_NoP_Mol.csv")
+mol = mol[!is.na(mol$MolForm),]
+mol = mol[!duplicated(mol$MolForm),]
 
 # Loop through all of the compounds and use the REST API
-brite.table = NULL # Empty object to store information
+mf.table = NULL # Empty object to store information
 
 for(i in 1:nrow(mol)){
   mf = mol$MolForm[i] # Set current KO number
@@ -48,15 +52,5 @@ for(i in 1:nrow(mol)){
 # Cleaning up duplicates and missing values
 mf.table = mf.table[!is.na(mf.table$CPD),]
 
-# Working with the CPD values
-incidence = data.frame(Detected_MF = mol$MolForm, Incidence = rowSums(data)/ncol(data))
-merged.cpd = mf.table[,c("Detected_MF", "CPD")] %>% 
-  left_join(incidence, by = "Detected_MF")
-col = colorRampPalette(c("dodgerblue2", "gray90", "firebrick2"))
-col = data.frame(Incidence = unique(merged.cpd$Incidence[order(merged.cpd$Incidence)]), 
-                 Color = col(length(unique(merged.cpd$Incidence))))
-merged.cpd = merged.cpd %>% left_join(col, by = "Incidence")
-merged.cpd = merged.cpd[,c("CPD", "Color")]
-write.table(merged.cpd, 
-            paste0(dataset, "_CPD_with_Incidence_Colors.txt"), 
-            quote = F, row.names = F, sep = "\t")
+# Writing results out
+write.table(mf.table, paste0(output_prefix, "_KEGG_CPD_FTICR_Matching.txt"), sep = "\t", quote = F, row.names = F)
